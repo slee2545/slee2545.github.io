@@ -1,0 +1,251 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  
+    <style type="text/css">
+      body, tbody {
+	font-family: sans-serif;
+	font-size: 13px;
+      }
+
+      #main {
+	clear: both;
+	border-collapse: collapse;
+      }
+
+      #main th, #main td {
+	border: 1px solid #d3d3d3;
+	white-space: nowrap;
+      }
+
+      .bell {
+	background: black;
+      }
+
+      #main, #options {
+	margin-right: 10px;
+	margin-bottom: 10px;
+	border: 1px solid gray;
+	background: white;
+      }
+
+      #main .trial {
+	width: 5ex;
+	text-align: right;
+      }
+
+      #main .info {
+	width: 100px;
+	text-align: center;
+      }
+
+      #options, #timer-1, #timer-2, #timer-3 {
+	float: left;
+      }
+
+      #timer-1, #timer-2, #timer-3 {
+	width: 200px;
+	font-size: 36px;
+	text-align: center;
+      }
+
+      #options .key input {
+	width: 3ex;
+	text-align: center;
+      }
+    </style>
+    <script type="text/javascript">
+      function Timer (node) {
+	this.running = false;
+	this.time = 0;
+	this.startTime = null;
+	this.node = node;
+	this.node.innerHTML = '0.0';
+	this.nodeTime = 0;
+	this.nodeTimeInterval = null;
+
+	this.start = function () {
+	  if (this.running)
+	    return;
+	  this.running = true;
+	  this.startTime = new Date().getTime();
+	  var self = this;
+	  this.nodeTimeInterval = setInterval(function () {self.step();}, 100);
+	};
+
+	this.step = function () {
+	  this.nodeTime += 1;
+	  this.node.innerHTML = (this.nodeTime / 10).toFixed(1);
+	};
+
+	this.stop = function () {
+	  if (!this.running)
+	    return;
+	  this.running = false;
+	  this.time += new Date().getTime() - this.startTime;
+	  clearInterval(this.nodeTimeInterval);
+	  this.nodeTime = this.time / 100;
+	  this.node.innerHTML = (this.nodeTime / 10).toFixed(1);
+	};
+
+	this.reset = function () {
+	  this.stop();
+	  this.time = 0;
+	  this.nodeTime = 0;
+	  this.node.innerHTML = '0.0';
+	};
+
+	this.toString = function () {
+	  return (this.time / 1000);
+	};
+      }
+
+      var records = {
+	'index': 1,
+
+	'append': function () {
+	  var trialCell = document.createElement('th');
+	  var time1Cell = document.createElement('td');
+	  var time2Cell = document.createElement('td');
+	  var time3Cell = document.createElement('td');
+	  trialCell.className = 'trial';
+	  time1Cell.className = 'trial';
+	  time2Cell.className = 'trial';
+	  time3Cell.className = 'trial';
+	  trialCell.innerHTML = this.index++;
+	  time1Cell.innerHTML = timer1.toString();
+	  time2Cell.innerHTML = timer2.toString();
+	  time3Cell.innerHTML = timer3.toString();
+	  document.getElementById('trial-row').appendChild(trialCell);
+	  document.getElementById('condition-1-row').appendChild(time1Cell);
+	  document.getElementById('condition-2-row').appendChild(time2Cell);
+	  document.getElementById('condition-3-row').appendChild(time3Cell);
+	}
+      };
+
+      var keys = {
+	'bindings': new Array(),
+
+	'add': function (node, pressCallback, releaseCallback) {
+	  this.bindings.push({'node': node, 'keydown': pressCallback, 'keyup': releaseCallback});
+	  node.onfocus = function () {this.select();};
+	},
+
+	'handleEvent': function (event) {
+	  if (!event)
+	    event = window.event;
+	  var target = event.target ? (event.target.nodeType == 4 ? event.target.parentNode : event.target) : event.srcElement;
+	  var key = String.fromCharCode(event.which ? event.which : event.keyCode).toLowerCase();
+
+	  if (event.ctrlKey || event.altKey || event.shiftKey ||
+	      target.tagName.toLowerCase() == 'input')
+	    return;
+
+	  for (var i = 0; i < keys.bindings.length; i++) {
+	    if (keys.bindings[i].node.value == key) {
+	      eval(keys.bindings[i][event.type]);
+	      return;
+	    }
+	  }
+	  document.body.className = 'bell';
+	  setTimeout('document.body.className = ""', 100);
+	}
+      };
+
+      function updateInfo (input, info1, info2) {
+	input.onfocus = function () {this.select();};
+	input.onchange = function () {
+	  info1.innerHTML = this.value;
+	  info2.innerHTML = this.value;
+	}
+      }
+
+      function onSubmit () {
+	document.getElementById('condition-1-group').innerHTML = document.getElementById('condition-2-group').innerHTML  = document.getElementById('condition-3-group').innerHTML = document.getElementById('group').value;
+	document.getElementById('condition-1-animal').innerHTML = document.getElementById('condition-2-animal').innerHTML  = document.getElementById('condition-3-animal').innerHTML = document.getElementById('animal').value;
+	document.getElementById('condition-1-date').innerHTML = document.getElementById('condition-2-date').innerHTML  = document.getElementById('condition-3-date').innerHTML = document.getElementById('date').value;
+	document.getElementById('condition-1-condition').innerHTML = document.getElementById('condition-1').value;
+	document.getElementById('condition-2-condition').innerHTML = document.getElementById('condition-2').value;
+	document.getElementById('condition-3-condition').innerHTML = document.getElementById('condition-3').value;
+	return false;
+      }
+
+      function onLoad () {
+	timer1 = new Timer(document.getElementById('timer-1'));
+	timer2 = new Timer(document.getElementById('timer-2'));
+	timer3 = new Timer(document.getElementById('timer-3'));
+	keys.add(document.getElementById('timer-1-key'), 'timer1.start();', 'timer1.stop()');
+	keys.add(document.getElementById('timer-2-key'), 'timer2.start();', 'timer2.stop()');
+	keys.add(document.getElementById('timer-3-key'), 'timer3.start();', 'timer3.stop()');
+	keys.add(document.getElementById('timer-reset-key'), 'timer1.stop(); timer2.stop();timer3.stop(); records.append(); timer1.reset(); timer2.reset(); timer3.reset()', '');
+
+	document.onkeydown = keys.handleEvent;
+	document.onkeyup = keys.handleEvent;
+	document.forms[0].onsubmit = onSubmit;
+      }
+
+      window.onload = onLoad;
+    </script>
+  </head><body>
+    <form>
+      <input id="group" value="Group" type="input">
+      <input id="animal" value="Animal" type="input">
+      <input id="date" value="Date" type="input">
+      <input id="condition-1" value="Condition 1" type="input">
+      <input id="condition-2" value="Condition 2" type="input">
+	  <input id="condition-3" value="Condition 3" type="input">
+      <input value="Update" type="submit">
+    </form>
+    <table id="options">
+      <tbody><tr>
+	<th>Action</th>
+	<th>Key</th>
+      </tr>
+      <tr>
+	<td>Start/stop left timer</td>
+	<td class="key"><input id="timer-1-key" maxlength="1" value="f" type="text"></td>
+      </tr>
+	<tr>
+	<td>Start/stop middle timer</td>
+	<td class="key"><input id="timer-2-key" maxlength="1" value="h" type="text"></td>
+      </tr>
+      <tr>
+	<td>Start/stop right timer</td>
+	<td class="key"><input id="timer-3-key" maxlength="1" value="j" type="text"></td>
+      </tr>
+      <tr>
+	<td>Append and reset</td>
+	<td class="key"><input id="timer-reset-key" maxlength="1" value="t" type="text"></td>
+      </tr>
+    </tbody></table>
+    <div id="timer-1">0.0</div>
+    <div id="timer-2">0.0</div>
+	<div id="timer-3">0.0</div>
+    <table id="main">
+      <tbody id="excel">
+	<tr id="trial-row">
+	  <th>Group</th>
+	  <th>Animal</th>
+	  <th>Date</th>
+	  <th>Condition</th>
+	</tr>
+	<tr id="condition-1-row">
+	  <td id="condition-1-group" class="info">Group</td>
+	  <td id="condition-1-animal" class="info">Animal</td>
+	  <td id="condition-1-date" class="info">Date</td>
+	  <td id="condition-1-condition" class="info">Condition 1</td>
+	</tr>
+	<tr id="condition-2-row">
+	  <td id="condition-2-group" class="info">Group</td>
+	  <td id="condition-2-animal" class="info">Animal</td>
+	  <td id="condition-2-date" class="info">Date</td>
+	  <td id="condition-2-condition" class="info">Condition 2</td>
+	</tr>
+	<tr id="condition-3-row">
+	  <td id="condition-3-group" class="info">Group</td>
+	  <td id="condition-3-animal" class="info">Animal</td>
+	  <td id="condition-3-date" class="info">Date</td>
+	  <td id="condition-3-condition" class="info">Condition 3</td>
+	</tr>
+      </tbody>
+    </table>
+  </body></html>
